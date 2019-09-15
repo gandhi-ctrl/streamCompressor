@@ -1,0 +1,130 @@
+#-------------- Additiona Variable -------
+INCS              = -I. $(patsubst %,-I%,$(INCLUDES))
+CFLAGS            = $(OPTIMIZE) -Wall -fmessage-length=0 $(INCS) $(ADDITIONALFLAGS)
+CPPFLAGS          = -fno-exceptions -std=c++11 $(CFLAGS)
+
+OBJ_PATH          = obj
+
+ifndef LIB_PATH
+LIB_PATH          = $(OBJ_PATH)
+endif
+
+ifndef OPTIMIZE
+OPTIMIZE          = -g3
+endif
+
+FULL_OBJ_PATH     = $(OBJ_PATH)/
+ABS_OBJ_PATH      = $(shell pwd)/$(OBJ_PATH)
+
+LIBS_FILES        = $(patsubst %,$(OBJ_PATH)/lib%.a,$(LIBRARIES))
+LIBS_CLEAN        = $(patsubst %,%Clean,$(LIBRARIES))
+#-----------------------------------------
+
+#-------------- Programs -----------------
+MAKE              = make
+AR                = ar
+CC                = gcc
+CPP               = g++
+DIR               = ls
+CP                = cp
+MKDIR             = mkdir
+#-----------------------------------------
+
+#-------------- Corrections --------------
+ifeq ($(OS),Windows_NT)
+  ADDITIONALFLAGS =
+  LDFLAGS         = $(OPTIMIZE) -L$(OBJ_PATH) $(patsubst %,-l%,$(LIBRARIES)) $(WINDOWS_LDFLAGS) -static -static-libgcc -static-libstdc++
+  EXESUFFIX       = .exe
+  ifdef SystemRoot
+    FULL_OBJ_PATH = $(OBJ_PATH)\\
+    ABS_OBJ_PATH  = $(shell cd)\\$(OBJ_PATH)
+    LIBS_FILES    = $(patsubst %,$(OBJ_PATH)\\%.a,$(LIBRARIES))
+    RM            = del /Q
+    MAKE          = mingw32-make
+    DIR           = dir /B
+    CP            = copy
+  endif
+else
+  ADDITIONALFLAGS = -fPIC
+  LDFLAGS         = $(OPTIMIZE) -static-libgcc -static-libstdc++ -L$(OBJ_PATH) $(patsubst %,-l%,$(LIBRARIES)) $(LINUX_LDFLAGS)
+  EXESUFFIX       =
+endif
+#-----------------------------------------
+
+#-------------- File search --------------
+ifndef C_FILES
+C_FILES             := $(shell $(DIR) -r *.c)
+endif
+ifndef CPP_FILES
+CPP_FILES           := $(shell $(DIR) *.cpp)
+endif
+
+ALL_FILES           = $(C_FILES) $(CPP_FILES)
+
+ALL_PROGRAMS        = $(patsubst %.c,%,$(PROGRAM_NAMES))
+#-----------------------------------------
+
+C_ASM_OBJS          = $(patsubst %.c,$(OBJ_PATH)/%.s,$(C_FILES))
+
+ALL_OBJS            = $(patsubst %.c,$(OBJ_PATH)/%.o,$(C_FILES)) $(patsubst %.cpp,$(OBJ_PATH)/%.o,$(CPP_FILES))
+ALL_OBJS_WITHOUT    = $(filter-out $(patsubst %,$(OBJ_PATH)/%.o,$(ALL_PROGRAMS)),$(ALL_OBJS))
+ALL_OBJS_IN_OBJ_DIR = $(patsubst %,$(OBJ_PATH)/%,$(notdir $(ALL_OBJS)))
+
+ifdef INCLUDE_DIRS
+INCLUDE_DIRECTORIES = $(patsubst %,-I%,$(INCLUDE_DIRS))
+CFLAGS             += $(INCLUDE_DIRECTORIES)
+CPPFLAGS           += $(INCLUDE_DIRECTORIES)
+endif
+
+all: $(OBJ_PATH) libs $(ALL_PROGRAMS)
+
+remake: fullClean all
+
+libs: $(OBJ_PATH) $(LIBS_FILES)
+
+lib: $(OBJ_PATH) $(ALL_OBJS)
+	$(AR) rcs $(patsubst %,lib%.a,$(STATICLIBNAME)) $(ALL_OBJS_IN_OBJ_DIR)
+	$(CP) $(patsubst %,lib%.a,$(STATICLIBNAME)) "$(LIB_PATH)"
+
+$(ALL_PROGRAMS): $(OBJ_PATH) $(ALL_OBJS)
+	$(CC) $(OBJ_PATH)/$@.o $(patsubst %,$(OBJ_PATH)/%,$(notdir $(ALL_OBJS_WITHOUT))) $(LDFLAGS) -o $@
+#	$(CP) $@.exe $@.c.exe
+	
+fullClean: $(LIBS_CLEAN) clean
+
+clean: $(OBJ_PATH)
+	$(RM) $(FULL_OBJ_PATH)*.o
+	$(RM) $(FULL_OBJ_PATH)*.a
+	$(RM) $(FULL_OBJ_PATH)*.s
+	$(RM) *.exe
+	$(RM) *.a
+	$(RM) *.s
+	
+$(LIBS_CLEAN):
+	$(MAKE) -C $(filter %$(patsubst %Clean,%,$@),$(INCLUDES)) clean
+
+celan: clean
+claen: clean
+lcean: clean
+lcena: clean
+cealn: clean
+calen: clean
+clena: clean
+
+$(OBJ_PATH):
+	$(MKDIR) $(OBJ_PATH)
+	
+$(OBJ_PATH)/%.a:
+	$(MAKE) -C $(filter %$(patsubst lib%,%,$*),$(INCLUDES)) lib
+	$(CP) "$(filter %$(patsubst lib%,%,$*),$(INCLUDES))/$*.a" "$(ABS_OBJ_PATH)"
+
+$(OBJ_PATH)/%.o: %.cpp
+	$(CPP) -c $(CPPFLAGS) $< -o $(OBJ_PATH)/$(notdir $@)
+
+$(OBJ_PATH)/%.o: %.c
+	$(CC) -c $(CFLAGS) $< -o $(OBJ_PATH)/$(notdir $@)
+
+$(OBJ_PATH)/%.s: %.c
+	$(CC) -S $(CFLAGS) $< -o $(OBJ_PATH)/$(notdir $@)
+#	$(CC) -c -Wa,-adhln -g $(CFLAGS) $< > $@
+
