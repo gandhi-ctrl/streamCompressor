@@ -174,8 +174,17 @@ static void _showStats(){
 	fprintf(stderr, "Stats:\n");
 	for(int n = 0; n < 256; ){
 		fprintf(stderr, "    ");
-		for(int m = 0; m < 16; m++, n++){
-			fprintf(stderr, "%02X: %4.1f ", n, _statistic[n] /sum);
+		for(int m = 0; m < 8; m++, n++){
+			if(isprint(n) != 0){
+				fprintf(stderr, "%02X '%c': ", n, n);
+			}else{
+				fprintf(stderr, "%02X    : ", n);
+			}
+			if(_statistic[n] == 0){
+				fprintf(stderr, "  -    ");
+			}else{
+				fprintf(stderr, "%4.1f   ", _statistic[n] /sum);
+			}
 		}
 		fprintf(stderr, "\n");
 	}

@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${fileDirname}/${fileBasenameNoExtension}",
-            "args": [ "-i", "comp.txt", "-o", "decode.txt" ],
+            "args": [ "-t", "text", "-i", "comp.txt", "-o", "decode.txt" ],
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}",
             "environment": [],
